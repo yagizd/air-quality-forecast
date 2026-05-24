@@ -1,0 +1,26 @@
+{
+  "berlin": {
+    "best_val_mae": 0.5896,
+    "stopped_epoch": 50,
+    "train_mae_final": 0.904,
+    "overfit_ratio": 0.6523
+  },
+  "hamburg": {
+    "best_val_mae": 0.8794,
+    "stopped_epoch": 45,
+    "train_mae_final": 1.2197,
+    "overfit_ratio": 0.721
+  },
+  "munich": {
+    "best_val_mae": 0.9604,
+    "stopped_epoch": 38,
+    "train_mae_final": 1.1903,
+    "overfit_ratio": 0.8068
+  },
+  "cologne": {
+    "best_val_mae": 0.9281,
+    "stopped_epoch": 48,
+    "train_mae_final": 1.1731,
+    "overfit_ratio": 0.7912
+  }
+}

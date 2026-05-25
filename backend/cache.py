@@ -24,7 +24,6 @@ import httpx
 import joblib
 import numpy as np
 import pandas as pd
-import pyarrow.parquet as pq
 
 logger = logging.getLogger("cache")
 
@@ -102,7 +101,7 @@ def _parse_zip(content: bytes, pollutant_key: str) -> pd.DataFrame:
         with zf.open(name) as f:
             raw = f.read()
         try:
-            df = pq.read_table(io.BytesIO(raw)).to_pandas()
+            df = pd.read_parquet(io.BytesIO(raw))
         except Exception as e:
             logger.warning(f"Parquet read failed for {name}: {e}")
             continue

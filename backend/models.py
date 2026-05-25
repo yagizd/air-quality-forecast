@@ -1,36 +1,36 @@
 """
 models.py
 ---------
-LSTM mimarisi — 05_train.py'deki PM25LSTM ile birebir ayni.
-state_dict yuklendiginde tum agirlik anahtarlari eslemeli.
+ONNX Runtime inference — torch bagimliligi yok.
+
+load_model(city, models_dir) -> OnnxModel
+OnnxModel.predict(array (1,48,18)) -> float
 """
 
 from __future__ import annotations
 
-import torch.nn as nn
+from pathlib import Path
+
+import numpy as np
+import onnxruntime as ort
 
 N_FEATURES = 18
+WINDOW     = 48
 
 
-class PM25LSTM(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.lstm1 = nn.LSTM(input_size=N_FEATURES, hidden_size=64,
-                             num_layers=1, batch_first=True)
-        self.drop1 = nn.Dropout(0.2)
-        self.lstm2 = nn.LSTM(input_size=64, hidden_size=32,
-                             num_layers=1, batch_first=True)
-        self.drop2 = nn.Dropout(0.2)
-        self.fc1   = nn.Linear(32, 16)
-        self.relu  = nn.ReLU()
-        self.fc2   = nn.Linear(16, 1)
+class OnnxModel:
+    def __init__(self, onnx_path: Path) -> None:
+        self._session = ort.InferenceSession(
+            str(onnx_path),
+            providers=["CPUExecutionProvider"],
+        )
 
-    def forward(self, x):
-        out, _ = self.lstm1(x)
-        out    = self.drop1(out)
-        out, _ = self.lstm2(out)
-        out    = self.drop2(out)
-        out    = out[:, -1, :]
-        out    = self.relu(self.fc1(out))
-        out    = self.fc2(out)
-        return out.squeeze(-1)
+    def predict(self, x: np.ndarray) -> float:
+        """x: shape (1, 48, N_FEATURES), dtype float32"""
+        result = self._session.run(["output"], {"input": x})
+        return float(result[0].flat[0])
+
+
+def load_model(city: str, models_dir: Path) -> OnnxModel:
+    path = models_dir / f"{city}_pm25.onnx"
+    return OnnxModel(path)

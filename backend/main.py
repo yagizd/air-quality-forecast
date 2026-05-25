@@ -17,12 +17,11 @@ from typing import Dict
 
 import numpy as np
 import pandas as pd
-import torch
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from cache import CITIES, CacheManager, build_features
-from models import PM25LSTM
+from models import load_model
 
 logging.basicConfig(
     level=logging.INFO,
@@ -42,14 +41,10 @@ state: Dict = {"models": {}, "cache": None}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 1) Modelleri RAM'e al
+    # 1) Modelleri RAM'e al (ONNX Runtime)
     for c in CITIES:
-        path = MODELS_DIR / f"{c}_pm25.pt"
-        m    = PM25LSTM()
-        m.load_state_dict(torch.load(path, map_location="cpu"))
-        m.eval()
-        state["models"][c] = m
-        logger.info(f"[{c}] model loaded from {path.name}")
+        state["models"][c] = load_model(c, MODELS_DIR)
+        logger.info(f"[{c}] model loaded from {c}_pm25.onnx")
 
     # 2) CacheManager — eager load + periodic background task
     cache = CacheManager()
@@ -161,8 +156,7 @@ async def predict(city: str = Query(...), hours: int = Query(24)):
                         "reason": "feature_build_failed"},
             )
 
-        with torch.no_grad():
-            pred = float(model(torch.from_numpy(window)).item())
+        pred = model.predict(window)
 
         predictions.append({
             "datetime": next_dt.isoformat(),

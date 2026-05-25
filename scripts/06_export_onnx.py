@@ -72,7 +72,7 @@ def export_city(city: str) -> None:
     with torch.no_grad():
         torch_out = model(dummy).numpy()
 
-    # 4) ONNX export
+    # 4) ONNX export — legacy exporter: .data dosyasi uretmez
     torch.onnx.export(
         model,
         dummy,
@@ -82,7 +82,16 @@ def export_city(city: str) -> None:
         dynamic_axes={"input": {0: "batch_size"}, "output": {0: "batch_size"}},
         opset_version=OPSET,
         do_constant_folding=True,
+        dynamo=False,
     )
+
+    # 4b) Agırlıkları .onnx icine gom, kalan .data dosyasını sil
+    import onnx as _onnx
+    _proto = _onnx.load(str(onnx_path), load_external_data=True)
+    _onnx.save_model(_proto, str(onnx_path), save_as_external_data=False)
+    data_file = Path(str(onnx_path) + ".data")
+    if data_file.exists():
+        data_file.unlink()
 
     # 5) Dogrulama: onnxruntime inference
     sess    = ort.InferenceSession(str(onnx_path),

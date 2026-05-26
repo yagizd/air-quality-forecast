@@ -9,7 +9,9 @@ FastAPI app:
 
 from __future__ import annotations
 
+import asyncio
 import logging
+import signal
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -19,6 +21,8 @@ import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
 
 from cache import CITIES, CacheManager, build_features
 from models import load_model
@@ -57,6 +61,13 @@ async def lifespan(app: FastAPI):
     cache.stop()
 
 
+shutdown_event = asyncio.Event()
+
+def handle_sigterm(*args):
+    shutdown_event.set()
+
+signal.signal(signal.SIGTERM, handle_sigterm)
+
 app = FastAPI(title="Air Quality Forecast API", lifespan=lifespan)
 
 app.add_middleware(
@@ -66,6 +77,23 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
+
+
+@app.on_event("shutdown")
+async def shutdown_handler():
+    await asyncio.sleep(2)
 
 
 # ---------------------------------------------------------------------------

@@ -1,6 +1,5 @@
-# Raw and processed data — never commit
+# Raw data — never commit
 data/raw/
-data/processed/
 
 # Python
 __pycache__/

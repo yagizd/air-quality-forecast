@@ -225,12 +225,12 @@ class CacheManager:
             self._apply_local_fallback(city)
 
     def _apply_local_fallback(self, city: str) -> None:
-        local_path = BACKEND_DIR / ".." / "data" / "processed" / f"{city}_hourly_agg.parquet"
+        local_path = BACKEND_DIR / ".." / "data" / "processed" / f"{city}_hourly_agg.csv"
         if not local_path.exists():
             logger.error(f"[{city}] local fallback not found: {local_path}")
             return
         try:
-            df  = pd.read_parquet(local_path).tail(96).reset_index(drop=True)
+            df  = pd.read_csv(local_path).tail(96).reset_index(drop=True)
             window, feats = build_features(df, self.entries[city].scaler)
             self.entries[city].raw_df       = df
             self.entries[city].window       = window

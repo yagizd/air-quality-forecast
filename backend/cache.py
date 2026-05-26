@@ -213,7 +213,7 @@ class CacheManager:
         raw = None
         try:
             raw = await fetch_latest(city)
-            if raw is None or raw.empty or raw[["pm25", "no2", "o3"]].dropna(how="all").empty:
+            if raw is None or raw.empty or len(raw["pm25"].dropna()) < 48:
                 raise RuntimeError("EEA returned 0 usable rows")
             window, feats = build_features(raw, self.entries[city].scaler)
             self.entries[city].raw_df       = raw

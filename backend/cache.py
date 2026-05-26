@@ -225,7 +225,7 @@ class CacheManager:
             self._apply_local_fallback(city)
 
     def _apply_local_fallback(self, city: str) -> None:
-        local_path = BACKEND_DIR.parent / "data" / "processed" / f"{city}_hourly_agg.parquet"
+        local_path = BACKEND_DIR / ".." / "data" / "processed" / f"{city}_hourly_agg.parquet"
         if not local_path.exists():
             logger.error(f"[{city}] local fallback not found: {local_path}")
             return
